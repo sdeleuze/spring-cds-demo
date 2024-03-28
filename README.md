@@ -79,14 +79,45 @@ Started CdsDemoApplication in 0.289 seconds (process running for 0.384)
 
 ## Build and run optimized container images CDS
 
-Check content of the `Dockerfile` and run the `create-container-image.sh` script, or run manually:
+You can use the Paketo Buildpacks to create a container image leveraging app cds optimization.
+
+Since it's an early release, it's not part of the official `paketobuildpacks/java` yet which is referenced by default by the boot plugin.
+
+Instead, you need for now to reference this Java composite buildpack: `anthonydahanne/java:cds-march-27`
+
+Also, a few environment variables need to be set; all in all, check the `pom.xml` file and pay attention to:
+
+```xml
+<configuration>
+    <image>
+        <buildpacks>
+            <buildpack>anthonydahanne/java:cds-march-27</buildpack>
+        </buildpacks>
+        <builder>paketobuildpacks/builder-jammy-buildpackless-tiny</builder>
+        <env>
+            <BP_JVM_VERSION>21</BP_JVM_VERSION>
+            <BP_JVM_CDS_ENABLED>true</BP_JVM_CDS_ENABLED>
+        </env>
+    </image>
+</configuration>
+```
+
 ```bash
-docker build -t sdeleuze/spring-cds-demo .
+./mvnw compile  spring-boot:process-aot  spring-boot:build-image
+```
+
+### Use the pack CLI instead
+
+IF you prefer to build the image using the `pack` CLI, you can use this command line:
+
+```shell
+pack build spring-cds-demo-cds --env BP_MAVEN_BUILD_ARGUMENTS="compile spring-boot:process-aot package" --env BP_JVM_VERSION=21 \
+ --env BP_JVM_CDS_ENABLED=true  -b anthonydahanne/java:cds-march-27  -B paketobuildpacks/builder-jammy-tiny:latest
 ```
 
 Then run the `run-container.sh` script, or run manually:
 ```bash
-docker run --rm -it -p 8080:8080 sdeleuze/spring-cds-demo
+docker run --rm -it -p 8080:8080 spring-cds-demo:1.0.0-SNAPSHOT
 ```
 
 You can also try to deploy the resulting container image to your Cloud or Kubernetes platform.
